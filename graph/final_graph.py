@@ -14,7 +14,7 @@ def plot_thrust_vs_time(name, test_g):
     plt.ylabel('Thrust')
     plt.grid(True)
 
-    time_labels = [time.strftime('%M:%S') for time in data['time']]
+    time_labels = [time.strftime('%M') for time in data['time']]
     plt.xticks(data['time'], time_labels, rotation=45)
 
     plt.tight_layout()
@@ -52,7 +52,7 @@ def plot_voltage_vs_time(name, test_g):
             voltages.append(float(row['voltage']))
 
     time_objects = [datetime.strptime(ts, "%H:%M:%S") for ts in timestamps]
-    minutes_and_seconds = [time_obj.strftime("%M:%S") for time_obj in time_objects]
+    minutes_and_seconds = [time_obj.strftime("%M") for time_obj in time_objects]
 
     plt.figure(figsize=(12, 6))
     plt.plot(minutes_and_seconds, voltages, marker='o', linestyle='-')
@@ -67,8 +67,8 @@ def plot_voltage_vs_time(name, test_g):
     plt.show()
 
 # Call the functions with the appropriate file name and test name
-name = '3rd_test'
-test_g = '1000g'
+name = '5rd_test'
+test_g = '1200'
 
 plot_thrust_vs_time(name, test_g)
 plot_voltage_vs_reading(name, test_g)

@@ -1,7 +1,7 @@
 import socket
 
 # Server settings
-host = '192.168.34.82'
+host = '192.168.1.6'
 port = 8081  # Choose an available port
 
 # Set up server socket
@@ -11,7 +11,7 @@ server_socket.listen(1)
 print(f"Server listening on {host}:{port}")
 
 # Open CSV file for writing
-csv_file = open('2st_test.csv', 'a')
+csv_file = open('5rd_test.csv', 'a')
 header = 'time,millsec,voltage,reading,average_reading\n'
 csv_file.write(header)
 
