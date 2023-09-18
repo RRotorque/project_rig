@@ -67,7 +67,7 @@ def plot_voltage_vs_time(name, test_g):
     plt.show()
 
 # Call the functions with the appropriate file name and test name
-name = '5rd_test'
+name = 'Official_test_3a'
 test_g = '1200'
 
 plot_thrust_vs_time(name, test_g)
