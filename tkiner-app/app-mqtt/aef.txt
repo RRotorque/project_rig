@@ -1,0 +1,19 @@
+
+    ## Voltage and Reading Change Analysis
+
+    ### Key Metrics
+
+    - **Maximum Voltage:** 12.56
+    - **Minimum Voltage:** 0.0
+
+    - **Maximum Thrust:** 54.8
+    - **Minimum Thrust:** -80.1
+
+    ### Comparison Analysis
+
+    The analysis focuses on changes in voltage and sensor readings over time:
+
+    ### Reading vs Time Analysis
+
+    To find the time corresponding to specific values of the reading:
+    

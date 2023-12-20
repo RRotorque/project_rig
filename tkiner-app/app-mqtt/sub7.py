@@ -186,7 +186,7 @@ frame1.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
 
 # Create a Matplotlib figure for the first real-time graph
 fig1, ax1 = plt.subplots()
-line1, = ax1.plot([], [], label='Graph 1')
+line1, = ax1.plot([], [], label='Graph 1',color='red', marker='o')
 ax1.set_xlabel('X1')
 ax1.set_ylabel('Y1')
 ax1.legend()
@@ -205,7 +205,7 @@ frame2.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
 
 # Create a Matplotlib figure for the second real-time graph
 fig2, ax2 = plt.subplots()
-line2, = ax2.plot([], [], label='Graph 2')
+line2, = ax2.plot([], [], label='Graph 2',color='blue', marker='o')
 ax2.set_xlabel('X2')
 ax2.set_ylabel('Y2')
 ax2.legend()
@@ -224,7 +224,7 @@ frame3.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
 
 # Create a Matplotlib figure for the third real-time graph
 fig3, ax3 = plt.subplots()
-line3, = ax3.plot([], [], label='Graph 3')
+line3, = ax3.plot([], [], label='Graph 3',color='green', marker='o')
 ax3.set_xlabel('X3')
 ax3.set_ylabel('Y3')
 ax3.legend()
