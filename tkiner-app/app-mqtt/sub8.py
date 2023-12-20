@@ -1,6 +1,6 @@
 import paho.mqtt.client as mqtt
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg , NavigationToolbar2Tk
 from matplotlib.animation import FuncAnimation
 import json
 import tkinter as tk
@@ -9,6 +9,7 @@ from PIL import Image, ImageTk
 import socket
 import pandas as pd
 from datetime import datetime
+
 
 
 def clear_data():
@@ -52,6 +53,15 @@ def clear_data():
     report_preview_text.config(state=tk.DISABLED)
 
     refresh_button.config(state=tk.NORMAL)
+
+# Function to add the toolbar to the Matplotlib canvas
+def add_toolbar(canvas, figure):
+    toolbar_frame = tk.Frame(root)
+    toolbar = NavigationToolbar2Tk(canvas, toolbar_frame)
+    toolbar.update()
+    toolbar_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
 
 def snap_graph():
 
@@ -343,11 +353,6 @@ root.title("RIG-QUE")
 header_frame = tk.Frame(root)
 header_frame.pack(fill='x')
 
-# Generate Report button in the header frame
-generate_report_button = Button(header_frame, text="Generate Report", command=generate_report)
-generate_report_button.grid(row=0, column=10, padx=10, pady=10)
-
-
 # Refresh button in the header frame
 refresh_button = Button(header_frame, text="Refresh", command=clear_data)
 refresh_button.grid(row=0, column=7, padx=10, pady=10)
@@ -453,6 +458,9 @@ canvas1 = FigureCanvasTkAgg(fig1, master=frame1)
 canvas_widget1 = canvas1.get_tk_widget()
 canvas_widget1.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
+# Call add_toolbar for the first Matplotlib canvas
+add_toolbar(canvas1, fig1)
+
 # Use Matplotlib animation to update the first plot
 ani1 = FuncAnimation(fig1, update_plot, interval=1000)  # 1000 milliseconds (1 second) update interval
 
@@ -472,6 +480,9 @@ canvas2 = FigureCanvasTkAgg(fig2, master=frame2)
 canvas_widget2 = canvas2.get_tk_widget()
 canvas_widget2.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
+# Call add_toolbar for the first Matplotlib canvas
+add_toolbar(canvas2, fig2)
+
 # Use Matplotlib animation to update the second plot
 ani2 = FuncAnimation(fig2, update_plot, interval=1000)  # 1000 milliseconds (1 second) update interval
 
@@ -490,6 +501,9 @@ ax3.legend()
 canvas3 = FigureCanvasTkAgg(fig3, master=frame3)
 canvas_widget3 = canvas3.get_tk_widget()
 canvas_widget3.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+# Call add_toolbar for the first Matplotlib canvas
+add_toolbar(canvas3, fig3)
 
 # Use Matplotlib animation to update the third plot
 ani3 = FuncAnimation(fig3, update_plot, interval=1000)  # 1000 milliseconds (1 second) update interval
