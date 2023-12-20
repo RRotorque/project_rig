@@ -9,7 +9,7 @@ from PIL import Image, ImageTk
 import socket
 import pandas as pd
 from datetime import datetime
-
+import matplotlib.dates as mdates
 
 
 def clear_data():
@@ -55,43 +55,23 @@ def clear_data():
     refresh_button.config(state=tk.NORMAL)
 
 # Function to add the toolbar to the Matplotlib canvas
-def add_toolbar(canvas, figure):
-    toolbar_frame = tk.Frame(root)
+def add_toolbar(canvas, figure, graph_frame):
+    toolbar_frame = tk.Frame(graph_frame)
     toolbar = NavigationToolbar2Tk(canvas, toolbar_frame)
-    toolbar.update()
-    toolbar_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+    
+    def on_home(self, *args):
+        pass
+    
+    def on_zoom(self, *args):
+        pass
+
+    toolbar.home = lambda *args: on_home(toolbar)
+    toolbar.zoom = lambda *args: on_zoom(toolbar)
+    
+    toolbar_frame.pack(side=tk.TOP, fill=tk.X)
     canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
 
-def snap_graph():
-
-    # Get the selected graph from the dropdown
-    selected_graph = graph_var.get()
-
-    # Choose the correct figure and canvas based on the selected graph
-    if selected_graph == "Graph 1":
-        fig, canvas = fig1, canvas1
-    elif selected_graph == "Graph 2":
-        fig, canvas = fig2, canvas2
-    elif selected_graph == "Graph 3":
-        fig, canvas = fig3, canvas3
-    else:
-        return  # Invalid graph selected
-
-    # Ask the user to choose the file name and location
-    file_path = filedialog.asksaveasfilename(defaultextension=".jpeg", initialfile="RIQ-QUE.png", filetypes=[("PNG files", "*.png")])
-
-    if file_path:
-        # Save the figure to the specified file path
-        fig.savefig(file_path)
-        messagebox.showinfo("Snap Success", f"Graph snapped and saved to {file_path}")
-
-
-    snap_path = f"{selected_graph.lower()}_snap.jpg"
-    canvas.get_tk_widget().postscript(file=snap_path, colormode='color')
-
-    # Notify the user about the snapshot
-    messagebox.showinfo("Snapshot", f"Snapshot of {selected_graph} saved as {snap_path}")
 
 def generate_report():
     # Check if there is any data to generate a report
@@ -268,6 +248,7 @@ def update_plot(frame):
     if x_data and y_data:
         # Convert timestamp strings to datetime objects
         x_data_datetime = pd.to_datetime(x_data, format='%H:%M:%S')
+        ax1.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
 
         # Update the first plot
         line1.set_xdata(x_data_datetime)
@@ -287,7 +268,10 @@ def update_plot(frame):
     if x_data_time_voltage and y_data_time_voltage:
         # Update the third plot (time vs. voltage)
         x_data_datetime_voltage = pd.to_datetime(x_data_time_voltage, format='%H:%M:%S')
+        ax3.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
+
         line3.set_xdata(x_data_datetime_voltage)
+
         line3.set_ydata(y_data_time_voltage)
         ax3.relim()
         ax3.autoscale_view()
@@ -356,17 +340,6 @@ header_frame.pack(fill='x')
 # Refresh button in the header frame
 refresh_button = Button(header_frame, text="Refresh", command=clear_data)
 refresh_button.grid(row=0, column=7, padx=10, pady=10)
-
-# Graph selection dropdown in the header frame
-graph_var = tk.StringVar()
-graph_combobox = ttk.Combobox(header_frame, textvariable=graph_var, values=["Graph 1", "Graph 2", "Graph 3"])
-graph_combobox.set("Graph 1")  # Set default value
-graph_combobox.grid(row=0, column=8, padx=10, pady=10)
-
-# Snap button in the header frame
-snap_button = Button(header_frame, text="Snap", command=snap_graph)
-snap_button.grid(row=0, column=9, padx=10, pady=10)
-
 
 # Load and resize your logo image (replace 'your_logo.png' with the actual filename)
 logo_image = Image.open('logo.png')
@@ -449,17 +422,17 @@ frame1.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
 # Create a Matplotlib figure for the first real-time graph
 fig1, ax1 = plt.subplots()
 line1, = ax1.plot([], [], label='Graph 1',color='red', marker='o')
-ax1.set_xlabel('X1')
-ax1.set_ylabel('Y1')
+ax1.set_xlabel('Time')
+ax1.set_ylabel('Thrust')
 ax1.legend()
 
 # Embed Matplotlib plot in Tkinter window
 canvas1 = FigureCanvasTkAgg(fig1, master=frame1)
+add_toolbar(canvas1, fig1, frame1)
 canvas_widget1 = canvas1.get_tk_widget()
 canvas_widget1.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
-# Call add_toolbar for the first Matplotlib canvas
-add_toolbar(canvas1, fig1)
+
 
 # Use Matplotlib animation to update the first plot
 ani1 = FuncAnimation(fig1, update_plot, interval=1000)  # 1000 milliseconds (1 second) update interval
@@ -471,17 +444,15 @@ frame2.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
 # Create a Matplotlib figure for the second real-time graph
 fig2, ax2 = plt.subplots()
 line2, = ax2.plot([], [], label='Graph 2',color='blue', marker='o')
-ax2.set_xlabel('X2')
-ax2.set_ylabel('Y2')
+ax2.set_xlabel('Thrust')
+ax2.set_ylabel('Voltage')
 ax2.legend()
 
 # Embed Matplotlib plot in Tkinter window
 canvas2 = FigureCanvasTkAgg(fig2, master=frame2)
+add_toolbar(canvas2, fig2, frame2)
 canvas_widget2 = canvas2.get_tk_widget()
 canvas_widget2.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-
-# Call add_toolbar for the first Matplotlib canvas
-add_toolbar(canvas2, fig2)
 
 # Use Matplotlib animation to update the second plot
 ani2 = FuncAnimation(fig2, update_plot, interval=1000)  # 1000 milliseconds (1 second) update interval
@@ -493,17 +464,17 @@ frame3.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
 # Create a Matplotlib figure for the third real-time graph
 fig3, ax3 = plt.subplots()
 line3, = ax3.plot([], [], label='Graph 3',color='green', marker='o')
-ax3.set_xlabel('X3')
-ax3.set_ylabel('Y3')
+ax3.set_xlabel('Time')
+ax3.set_ylabel('Voltage')
 ax3.legend()
 
 # Embed Matplotlib plot in Tkinter window
 canvas3 = FigureCanvasTkAgg(fig3, master=frame3)
+add_toolbar(canvas3, fig3, frame3)
 canvas_widget3 = canvas3.get_tk_widget()
 canvas_widget3.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
-# Call add_toolbar for the first Matplotlib canvas
-add_toolbar(canvas3, fig3)
+
 
 # Use Matplotlib animation to update the third plot
 ani3 = FuncAnimation(fig3, update_plot, interval=1000)  # 1000 milliseconds (1 second) update interval
