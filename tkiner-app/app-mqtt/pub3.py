@@ -7,7 +7,7 @@ def on_publish(client, userdata, mid):
     print("Message Published")
 
 # Read data from CSV file
-csv_file_path = 'fligh-motortest.csv'  # Replace with the actual path to your CSV file
+csv_file_path = "./fligh-motortest.csv"  # Replace with the actual path to your CSV file
 df = pd.read_csv(csv_file_path)
 
 client = mqtt.Client()
