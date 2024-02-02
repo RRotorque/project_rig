@@ -190,7 +190,11 @@ def on_connect(client, userdata, flags, rc):
     if rc == 0:
         print(f"Connected to {broker_entry.get()}:{port_combobox.get()}")
         connection_status_label.config(text="Connected successfully", fg="green")
-        client.subscribe("topic/stream")
+        topic_to_subscribe = topic_entry.get()
+        client.subscribe(topic_to_subscribe)
+        print(f"Subscribed to {topic_to_subscribe} successfully")
+        
+        refresh_button.config(state=tk.NORMAL)
         # update_report_preview()
     else:
         print(f"Connection failed with result code {rc}")
@@ -287,10 +291,12 @@ def update_gui(message):
 def connect_to_broker():
     broker_address = broker_entry.get()
     port_number = int(port_combobox.get())
+    topic = topic_entry.get()
 
     try:
         client.connect(broker_address, port_number, 60)
         client.loop_start()  # Start the loop after connection
+        client.subscribe(topic)
     except socket.gaierror:
         connection_status_label.config(text="Invalid broker address", fg="red")
 
@@ -339,10 +345,10 @@ header_frame.pack(fill='x')
 
 # Refresh button in the header frame
 refresh_button = Button(header_frame, text="Refresh", command=clear_data)
-refresh_button.grid(row=0, column=7, padx=10, pady=10)
+refresh_button.grid(row=0, column=11, padx=10, pady=10)
 
 # Load and resize your logo image (replace 'your_logo.png' with the actual filename)
-logo_image = Image.open('logo.png')
+logo_image = Image.open(open("logo.png", 'rb'))
 logo_image = logo_image.resize((50, 50))
 logo_image = ImageTk.PhotoImage(logo_image)
 
@@ -356,20 +362,28 @@ broker_label.grid(row=0, column=1)
 broker_entry = Entry(header_frame)
 broker_entry.grid(row=0, column=2)
 
-# Port combobox in the header frame
+# Topic entry in the header frame
+topic_label = tk.Label(header_frame, text="Topic:")
+topic_label.grid(row=0, column=3)
+topic_entry = Entry(header_frame)
+topic_entry.grid(row=0, column=4)
+
+# Port label in the header frame
 port_label = tk.Label(header_frame, text="Port:")
-port_label.grid(row=0, column=3)
+port_label.grid(row=0, column=5)
+
+# Port combobox in the header frame
 port_combobox = ttk.Combobox(header_frame, values=["1883", "8883"])  # Add more port values as needed
 port_combobox.set("1883")  # Set a default value
-port_combobox.grid(row=0, column=4)
+port_combobox.grid(row=0, column=6)  # Place the combobox in the same column as the port_label
 
 # Connect button in the header frame
 connect_button = Button(header_frame, text="Connect", command=connect_to_broker)
-connect_button.grid(row=0, column=5, padx=10, pady=10)
+connect_button.grid(row=0, column=7, padx=10, pady=10)  # Place the button in the next column
 
 # Connection status label in the header frame
 connection_status_label = tk.Label(header_frame, text="", fg="black")
-connection_status_label.grid(row=0, column=6, padx=10, pady=10)
+connection_status_label.grid(row=0, column=8, padx=10, pady=10)  # Place the label in the next column
 
 # Main content frame
 content_frame = tk.Frame(root)
@@ -484,16 +498,24 @@ client.on_connect = on_connect
 client.on_message = on_message
 
 def on_closing():
+    # Stop Matplotlib animations
+    ani1.event_source.stop()
+    ani2.event_source.stop()
+    ani3.event_source.stop()
+
     # Stop the MQTT client loop and disconnect
     print("Closing the application.")
     client.loop_stop()
     client.disconnect()
     print("Disconnected from MQTT broker.")
-    root.destroy()
+
+    # Destroy the Tkinter window
+    root.quit()
     print("Tkinter window destroyed.")
 
 # Handle window close events
 root.protocol("WM_DELETE_WINDOW", on_closing)
+
 
 # Start the Tkinter main loop
 try:
