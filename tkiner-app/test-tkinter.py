@@ -1,6 +1,6 @@
 import tkinter as tk
-from tkinter import scrolledtext, ttk, Button,messagebox
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from tkinter import scrolledtext, ttk, Button,messagebox,filedialog
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg,NavigationToolbar2Tk
 from matplotlib.figure import Figure
 from PIL import Image, ImageTk
 import numpy as np
@@ -171,7 +171,7 @@ def on_connect(*args):
 
         # Update the scrolled_text2 widget
         scrolled_text1.config(state=tk.NORMAL)
-        scrolled_text1.insert(tk.END, "Connected to broker successfully.\n")
+        # scrolled_text1.insert(tk.END, "Connected to broker successfully.\n")
         scrolled_text1.config(state=tk.DISABLED)
         scrolled_text1.see(tk.END)  # Scroll to the end
     else:
@@ -379,8 +379,15 @@ def main():
     connect_button = ttk.Button(header_frame, text="Connect", command=connect)
     connect_button.grid(row=1, column=14)
 
+    # Save button in the header frame
+    save_button = ttk.Button(header_frame, text="Save", command=save_content)
+    save_button.grid(row=1, column=15, padx=10)
+
     refresh_button = ttk.Button(header_frame, text="Refresh", command=refresh_ports)
     refresh_button.grid(row=1, column=16, padx=10, pady=10)
+
+    generate_report_button = ttk.Button(header_frame, text="Generate Report", command=generate_report)
+    generate_report_button.grid(row=1, column=17, padx=10,sticky="e")
 
 
     # Serial Communication
@@ -422,30 +429,123 @@ def main():
     scrolled_text3 = create_scrolled_text(content_frame)
     scrolled_text3.grid(row=1, column=2, sticky="nsew")
 
-    # Create Matplotlib figures
-    figure1 = create_matplotlib_figure("Graph 1", np.arange(0, 10, 0.1), np.sin(np.arange(0, 10, 0.1)))
-    figure2 = create_matplotlib_figure("Graph 2", np.arange(0, 10, 0.1), np.cos(np.arange(0, 10, 0.1)))
-    figure3 = create_matplotlib_figure("Graph 3", np.arange(0, 10, 0.1), np.tan(np.arange(0, 10, 0.1)))
-
-    # Embed Matplotlib figures in Tkinter using grid
-    canvas1 = FigureCanvasTkAgg(figure1, master=content_frame)
-    canvas1.get_tk_widget().grid(row=2, column=0, sticky="nsew")
-
-    canvas2 = FigureCanvasTkAgg(figure2, master=content_frame)
-    canvas2.get_tk_widget().grid(row=2, column=1, sticky="nsew")
-
-    canvas3 = FigureCanvasTkAgg(figure3, master=content_frame)
-    canvas3.get_tk_widget().grid(row=2, column=2, sticky="nsew")
-
-    # Set equal column weights for resizing
-    for i in range(3):
-        content_frame.columnconfigure(i, weight=1)
 
     # Set row weight for resizing
     content_frame.rowconfigure(1, weight=1)
-    content_frame.rowconfigure(2, weight=1)
+
+    graph_frame = tk.Frame(root)
+    graph_frame.pack(fill='both', expand=True)
+
+    # Create Matplotlib figures with toolbars
+    canvas1, toolbar1 = create_matplotlib_figure_with_toolbar(graph_frame, "Graph 1", np.arange(0, 10, 0.1), np.sin(np.arange(0, 10, 0.1)), row=0, col=0)
+    canvas2, toolbar2 = create_matplotlib_figure_with_toolbar(graph_frame, "Graph 2", np.arange(0, 10, 0.1), np.cos(np.arange(0, 10, 0.1)), row=0, col=1)
+    canvas3, toolbar3 = create_matplotlib_figure_with_toolbar(graph_frame, "Graph 3", np.arange(0, 10, 0.1), np.tan(np.arange(0, 10, 0.1)), row=0, col=2)
+
+    # Set equal column weights for resizing
+    graph_frame.columnconfigure(0, weight=1)
+    graph_frame.columnconfigure(1, weight=1)
+    graph_frame.columnconfigure(2, weight=1)
+
+    # Set row weight for resizing
+    graph_frame.rowconfigure(0, weight=1)
+
+    # Set row weight for resizing in the new frame
+    graph_frame.rowconfigure(1, weight=1)
 
     root.mainloop()
+
+def create_matplotlib_figure_with_toolbar(parent, title, x_data, y_data, row, col):
+    figure = Figure(figsize=(6, 4), dpi=100)
+    subplot = figure.add_subplot(1, 1, 1)
+    subplot.plot(x_data, y_data)
+    subplot.set_title(title)
+    subplot.set_xlabel("X-axis", labelpad=0)  # Increase labelpad as needed
+    subplot.set_ylabel("Y-axis", labelpad=0)
+
+    # Create a Frame to hold both the canvas and the toolbar
+    graph_frame = tk.Frame(parent)
+    graph_frame.grid(row=row, column=col, sticky="nsew")
+
+    # Prevent the frame from adjusting its size to fit its children
+    graph_frame.pack_propagate(0)
+
+    # Create Matplotlib toolbar
+    toolbar = NavigationToolbar2Tk(figure.canvas, graph_frame)
+    toolbar.update()
+    toolbar.grid(row=0, column=0, sticky="nsew", padx=30, pady=10)  # Adjust padx and pady as needed
+
+    # Create Matplotlib canvas
+    canvas = FigureCanvasTkAgg(figure, master=graph_frame)
+    canvas.get_tk_widget().grid(row=1, column=0, sticky="nsew", padx=30, pady=10)  # Adjust padx and pady as needed
+
+    # Set equal row weights for resizing in the new frame
+    graph_frame.rowconfigure(0, weight=0)  # Toolbar
+    graph_frame.rowconfigure(1, weight=1)  # Canvas
+
+    return canvas, toolbar
+
+
+def generate_report():
+    # Get the content from scrolled_text3
+    report_content = scrolled_text3.get("1.0", tk.END).strip()
+
+    # Check if there is data before generating the report
+    if report_content:
+        # Use asksaveasfilename to prompt the user for file location and name
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".txt",
+            filetypes=[
+                ("Text files", "*.txt"),
+                ("PDF files", "*.pdf"),
+                ("All files", "*.*")
+            ]
+        )
+
+        if file_path:
+            # Implement your saving logic here
+            # Example: Save the content to the specified file
+            with open(file_path, "w") as file:
+                file.write(report_content)
+
+            messagebox.showinfo("Save Successful", f"Report saved to {file_path} successfully.")
+        else:
+            messagebox.showwarning("No File Selected", "Please select a file location.")
+    else:
+        messagebox.showwarning("No Data", "No data available to generate a report.")
+
+def save_content():
+    # Get the content from COM and MQTT connections
+    com_content = scrolled_text2.get("1.0", tk.END).strip()
+    mqtt_content = scrolled_text1.get("1.0", tk.END).strip()
+
+    # Check if there is data before saving
+    if com_content or mqtt_content:
+        # Use asksaveasfilename to prompt the user for file location and name
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".txt",
+            filetypes=[
+                ("Text files", "*.txt"),
+                ("PDF files", "*.pdf"),
+                ("CSV files", "*.csv"),
+                ("Excel files", "*.xlsx"),
+                ("All files", "*.*")
+            ]
+        )
+
+        if file_path:
+            # Implement your saving logic here
+            # Example: Save the content to the specified file
+            with open(file_path, "w") as file:
+                if com_content:
+                    file.write("COM Connection:\n" + com_content + "\n\n")
+                if mqtt_content:
+                    file.write("MQTT Connection:\n" + mqtt_content + "\n\n")
+
+            messagebox.showinfo("Save Successful", f"Content saved to {file_path} successfully.")
+        else:
+            messagebox.showwarning("No File Selected", "Please select a file location.")
+    else:
+        messagebox.showwarning("No Data", "No data to save.")
 
 def create_scrolled_text(parent):
     scrolled_text = scrolledtext.ScrolledText(parent, state=tk.DISABLED)
