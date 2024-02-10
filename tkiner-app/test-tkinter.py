@@ -11,6 +11,8 @@ import json
 import pandas as pd
 import socket
 import paho.mqtt.client as mqtt
+from matplotlib.animation import FuncAnimation
+import datetime
 
 # Declare com_combobox as a global variable
 com_combobox = None
@@ -19,16 +21,15 @@ serial_port = None
 serial_thread = None
 data_text = None  # Corrected to avoid conflicts
 
-# Variables for storing x, y data
-x_data = []
-y_data = []
+# Sample data for each graph
+x_data1 = []
+y_data1 = []
 
-x_data_voltage_reading = []
-y_data_voltage_reading = []
+x_data2 = []
+y_data2 = []
 
-# Variables for storing x, y data for time vs. voltage
-x_data_time_voltage = []
-y_data_time_voltage = []
+x_data3 = []
+y_data3 = []
 
 def get_available_com_ports():
     com_ports = [port.device for port in serial.tools.list_ports.comports()]
@@ -192,6 +193,11 @@ def update_gui(message):
     scrolled_text1.config(state=tk.DISABLED)
     scrolled_text1.yview(tk.END)  # Scroll to the bottom
 
+
+def extract_minutes_from_time(time_str):
+    time_obj = datetime.datetime.strptime(time_str, "%H:%M:%S").time()
+    return time_obj.minute
+
 def on_message(client, userdata, msg):
     message = msg.payload.decode('utf-8')
     print(f"Received message: {message}")
@@ -204,14 +210,19 @@ def on_message(client, userdata, msg):
     y_point_reading = data.get('reading')
     y_point_voltage = data.get('voltage')
 
-    x_data.append(x_point)
-    y_data.append(y_point_reading)
+    minutes = extract_minutes_from_time(x_point)
 
-    x_data_voltage_reading.append(y_point_reading)
-    y_data_voltage_reading.append(y_point_voltage)
+    #time vs thrust
+    x_data1.append(minutes)
+    y_data1.append(y_point_reading)
 
-    x_data_time_voltage.append(x_point)
-    y_data_time_voltage.append(y_point_voltage)
+    #thruust vs voltage
+    x_data2.append(y_point_reading)
+    y_data2.append(y_point_voltage)
+
+    #time vs voltage
+    x_data3.append(minutes)
+    y_data3.append(y_point_voltage)
 
     # Enable the refresh button after receiving a message
     refresh_button.config(state=tk.NORMAL)
@@ -227,14 +238,14 @@ def on_message(client, userdata, msg):
 
 def update_report_preview():
     # Check if there is any data to generate a report
-    if not x_data_time_voltage or not y_data_voltage_reading:
+    if not x_data1 or not y_data2:
         return
 
     # Assuming you want to use the existing data structures
     df = pd.DataFrame({
-        'time': x_data_time_voltage,
-        'voltage': y_data_voltage_reading,
-        'reading': x_data_voltage_reading
+        'time': x_data1,
+        'voltage': y_data2,
+        'reading': y_data2
     })
 
     # Calculate changes in voltage and reading
@@ -284,33 +295,16 @@ def update_report_preview():
 
 
 
-
 def main():
-    global message_text
-    global com_port_var
-    global baud_rate_var
-    global com_combobox
-    global connect_button 
-    global refresh_button
-    global data_text
-    global root
-    global scrolled_text2
-    global scrolled_text1
-    global scrolled_text3
-    global connection_status_label
-    global broker_entry
-    global topic_entry
-    global port_combobox
+    global message_text, com_port_var, baud_rate_var, com_combobox, connect_button, refresh_button, data_text, \
+        root, scrolled_text2, scrolled_text1, scrolled_text3, connection_status_label, broker_entry, topic_entry, port_combobox
 
     root = tk.Tk()
 
-
-    # Load and resize your logo image (replace 'your_logo.png' with the actual filename)
+    # Set up your logo image
     logo_image = Image.open(open("logo.png", 'rb'))
     logo_image = logo_image.resize((32, 32))
     logo_image = ImageTk.PhotoImage(logo_image)
-
-    # Set the application icon
     root.iconphoto(True, logo_image)
 
     root.title("Tkinter with Matplotlib Example")
@@ -318,7 +312,6 @@ def main():
     baud_rate_var = tk.StringVar()
     baud_rate_var.set("9600")
 
-    # Variables
     com_ports = get_available_com_ports()
     com_port_var = tk.StringVar()
     com_port_var.set(com_ports[0] if com_ports else "")
@@ -349,31 +342,35 @@ def main():
     port_combobox.grid(row=1, column=5)
 
     # Connect button in the header frame
-    connect_button1 = ttk.Button(header_frame, text="Connect", command=connect_to_broker) #command=connect_to_broker
+    connect_button1 = ttk.Button(header_frame, text="Connect", command=connect_to_broker)
     connect_button1.grid(row=1, column=6, padx=10)
 
     # Connection status label in the header frame
     connection_status_label = tk.Label(header_frame, text="", fg="black")
     connection_status_label.grid(row=1, column=7, padx=10)
 
-        # Refresh button in the header frame
+    # Refresh button in the header frame
     refresh_button = Button(header_frame, text="Refresh", command=clear_data)
     refresh_button.grid(row=1, column=8, padx=10, pady=10)
 
+    # Com label in the header frame
     com_label = tk.Label(header_frame, text="Com Port:")
     com_label.grid(row=1, column=10)
 
+    # Com combobox in the header frame
     com_combobox = ttk.Combobox(header_frame, textvariable=com_port_var, values=com_ports)
     com_combobox.grid(row=1, column=11)
 
     # Schedule the refresh_ports function to be called after the mainloop starts
     root.after(100, refresh_ports)
 
+    # Baud rate label in the header frame
     baud_rate_label = tk.Label(header_frame, text="Baud Rate:")
     baud_rate_label.grid(row=1, column=12)
 
+    # Baud rate combobox in the header frame
     baud_rate_combobox = ttk.Combobox(header_frame, textvariable=baud_rate_var, values=["9600", "115200"])
-    baud_rate_combobox.grid(row=1, column=13,)
+    baud_rate_combobox.grid(row=1, column=13)
 
     # Connect button in the header frame
     connect_button = ttk.Button(header_frame, text="Connect", command=connect)
@@ -383,26 +380,17 @@ def main():
     save_button = ttk.Button(header_frame, text="Save", command=save_content)
     save_button.grid(row=1, column=15, padx=10)
 
+    # Refresh button in the header frame
     refresh_button = ttk.Button(header_frame, text="Refresh", command=refresh_ports)
     refresh_button.grid(row=1, column=16, padx=10, pady=10)
 
+    # Generate report button in the header frame
     generate_report_button = ttk.Button(header_frame, text="Generate Report", command=generate_report)
-    generate_report_button.grid(row=1, column=17, padx=10,sticky="e")
-
+    generate_report_button.grid(row=1, column=17, padx=10, sticky="e")
 
     # Serial Communication
     serial_port = None
     serial_thread = None
-
-
-
-
-
-
-
-
-
-
 
     # ... (Rest of the header frame code remains unchanged)
 
@@ -413,8 +401,8 @@ def main():
     label1 = tk.Label(content_frame, text="MQTT Connection")
     label1.grid(row=0, column=0, pady=(0, 10))
 
-    labe2 = tk.Label(content_frame, text="COM Connection")  # Renamed to avoid conflicts
-    labe2.grid(row=0, column=1, pady=(0, 10))
+    label2 = tk.Label(content_frame, text="COM Connection")
+    label2.grid(row=0, column=1, pady=(0, 10))
 
     label3 = tk.Label(content_frame, text="Report View")
     label3.grid(row=0, column=2, pady=(0, 10))
@@ -429,17 +417,15 @@ def main():
     scrolled_text3 = create_scrolled_text(content_frame)
     scrolled_text3.grid(row=1, column=2, sticky="nsew")
 
-
     # Set row weight for resizing
     content_frame.rowconfigure(1, weight=1)
 
     graph_frame = tk.Frame(root)
     graph_frame.pack(fill='both', expand=True)
 
-    # Create Matplotlib figures with toolbars
-    canvas1, toolbar1 = create_matplotlib_figure_with_toolbar(graph_frame, "Graph 1", np.arange(0, 10, 0.1), np.sin(np.arange(0, 10, 0.1)), row=0, col=0)
-    canvas2, toolbar2 = create_matplotlib_figure_with_toolbar(graph_frame, "Graph 2", np.arange(0, 10, 0.1), np.cos(np.arange(0, 10, 0.1)), row=0, col=1)
-    canvas3, toolbar3 = create_matplotlib_figure_with_toolbar(graph_frame, "Graph 3", np.arange(0, 10, 0.1), np.tan(np.arange(0, 10, 0.1)), row=0, col=2)
+    canvas1, toolbar1, update_func1 = create_live_matplotlib_figure_with_toolbar(graph_frame, "Graph 1", x_data1, y_data1, row=0, col=0)
+    canvas2, toolbar2, update_func2 = create_live_matplotlib_figure_with_toolbar(graph_frame, "Graph 2", x_data2, y_data2, row=0, col=1)
+    canvas3, toolbar3, update_func3 = create_live_matplotlib_figure_with_toolbar(graph_frame, "Graph 3", x_data3, y_data3, row=0, col=2)
 
     # Set equal column weights for resizing
     graph_frame.columnconfigure(0, weight=1)
@@ -449,17 +435,22 @@ def main():
     # Set row weight for resizing
     graph_frame.rowconfigure(0, weight=1)
 
-    # Set row weight for resizing in the new frame
-    graph_frame.rowconfigure(1, weight=1)
+    # Start the animation without caching frame data
+    ani1 = FuncAnimation(canvas1.figure, update_func1, blit=False, cache_frame_data=False)
+    ani2 = FuncAnimation(canvas2.figure, update_func2, blit=False, cache_frame_data=False)
+    ani3 = FuncAnimation(canvas3.figure, update_func3, blit=False, cache_frame_data=False)
+
+
+    # ... (Rest of the graph frame code remains unchanged)
 
     root.mainloop()
 
-def create_matplotlib_figure_with_toolbar(parent, title, x_data, y_data, row, col):
+
+def create_live_matplotlib_figure_with_toolbar(parent, title, x_data, y_data, row, col):
     figure = Figure(figsize=(6, 4), dpi=100)
     subplot = figure.add_subplot(1, 1, 1)
-    subplot.plot(x_data, y_data)
     subplot.set_title(title)
-    subplot.set_xlabel("X-axis", labelpad=0)  # Increase labelpad as needed
+    subplot.set_xlabel("X-axis", labelpad=0)
     subplot.set_ylabel("Y-axis", labelpad=0)
 
     # Create a Frame to hold both the canvas and the toolbar
@@ -472,19 +463,44 @@ def create_matplotlib_figure_with_toolbar(parent, title, x_data, y_data, row, co
     # Create Matplotlib toolbar
     toolbar = NavigationToolbar2Tk(figure.canvas, graph_frame)
     toolbar.update()
-    toolbar.grid(row=0, column=0, sticky="nsew", padx=30, pady=10)  # Adjust padx and pady as needed
+    toolbar.grid(row=0, column=0, sticky="nsew", padx=30, pady=10)
 
     # Create Matplotlib canvas
     canvas = FigureCanvasTkAgg(figure, master=graph_frame)
-    canvas.get_tk_widget().grid(row=1, column=0, sticky="nsew", padx=30, pady=10)  # Adjust padx and pady as needed
+    canvas.get_tk_widget().grid(row=1, column=0, sticky="nsew", padx=30, pady=10)
 
     # Set equal row weights for resizing in the new frame
     graph_frame.rowconfigure(0, weight=0)  # Toolbar
     graph_frame.rowconfigure(1, weight=1)  # Canvas
 
-    return canvas, toolbar
+    # Define the update function for animation
+    def update_func(frame):
+        update_data(frame, subplot, x_data, y_data, title, canvas)
+
+    return canvas, toolbar, update_func
 
 
+def update_data(frame, subplots, x_data, y_data_sets, titles, canvas):
+    for i, (subplot, x_data, y_data, title) in enumerate(zip(subplots, x_data, y_data_sets, titles)):
+        # Update the line data
+        line = subplot.lines[0]
+        line.set_xdata(x_data)
+        line.set_ydata(y_data)
+
+        if title == "Graph 1":
+            subplot.set_title(title)
+            subplot.set_xlabel("Time", labelpad=0)
+            subplot.set_ylabel("Voltage", labelpad=0)
+        elif title == "Graph 2":
+            subplot.set_title(title)
+            subplot.set_xlabel("Voltage", labelpad=0)
+            subplot.set_ylabel("Thrust", labelpad=0)
+        elif title == "Graph 3":
+            subplot.set_title(title)
+            subplot.set_xlabel("Thrust", labelpad=0)
+            subplot.set_ylabel("Time", labelpad=0)
+
+    canvas.draw()
 def generate_report():
     # Get the content from scrolled_text3
     report_content = scrolled_text3.get("1.0", tk.END).strip()
