@@ -14,6 +14,8 @@ import paho.mqtt.client as mqtt
 from matplotlib.animation import FuncAnimation
 import datetime
 
+
+
 # Declare com_combobox as a global variable
 com_combobox = None
 is_connected = False
@@ -21,15 +23,10 @@ serial_port = None
 serial_thread = None
 data_text = None  # Corrected to avoid conflicts
 
-# Sample data for each graph
-x_data1 = []
-y_data1 = []
 
-x_data2 = []
-y_data2 = []
+    # Create arrays to store data for the live graphs
+time_data, voltage_data, reading_data = [], [], []
 
-x_data3 = []
-y_data3 = []
 
 def get_available_com_ports():
     com_ports = [port.device for port in serial.tools.list_ports.comports()]
@@ -116,6 +113,44 @@ def read_data():
 
 
 
+def clear_data():
+    global time_data, voltage_data, reading_data
+
+    # Clear the data structures
+    time_data, voltage_data, reading_data = [], [], []
+
+    # Clear the ScrolledText widgets
+    scrolled_text1.config(state=tk.NORMAL)
+    scrolled_text1.delete(1.0, tk.END)
+    scrolled_text1.config(state=tk.DISABLED)
+
+    scrolled_text3.config(state=tk.NORMAL)
+    scrolled_text3.delete(1.0, tk.END)
+    scrolled_text3.config(state=tk.DISABLED)
+
+    # Clear the live graphs
+    ax1.clear()
+    ax1.set_title("Time vs Voltage")
+    ax1.set_xlabel("Time")
+    ax1.set_ylabel("Voltage")
+    ax1.legend()
+    live_canvas1.draw()
+
+    ax2.clear()
+    ax2.set_title("Voltage vs Thrust")
+    ax2.set_xlabel("Voltage")
+    ax2.set_ylabel("Thrust")
+    ax2.legend()
+    live_canvas2.draw()
+
+    ax3.clear()
+    ax3.set_title("Time vs Thrust")
+    ax3.set_xlabel("Time")
+    ax3.set_ylabel("Thrust")
+    ax3.legend()
+    live_canvas3.draw()
+
+    # Optional: Add any other specific clearing actions as needed
 
 
 
@@ -211,18 +246,19 @@ def on_message(client, userdata, msg):
     y_point_voltage = data.get('voltage')
 
     minutes = extract_minutes_from_time(x_point)
+    print(minutes)
 
     #time vs thrust
-    x_data1.append(minutes)
-    y_data1.append(y_point_reading)
+    time_data.append(minutes)
+    reading_data.append(y_point_reading)
 
     #thruust vs voltage
-    x_data2.append(y_point_reading)
-    y_data2.append(y_point_voltage)
+    reading_data.append(y_point_reading)
+    voltage_data.append(y_point_voltage)
 
     #time vs voltage
-    x_data3.append(minutes)
-    y_data3.append(y_point_voltage)
+    time_data.append(minutes)
+    voltage_data.append(y_point_voltage)
 
     # Enable the refresh button after receiving a message
     refresh_button.config(state=tk.NORMAL)
@@ -238,14 +274,14 @@ def on_message(client, userdata, msg):
 
 def update_report_preview():
     # Check if there is any data to generate a report
-    if not x_data1 or not y_data2:
+    if not time_data or not voltage_data:
         return
 
     # Assuming you want to use the existing data structures
     df = pd.DataFrame({
-        'time': x_data1,
-        'voltage': y_data2,
-        'reading': y_data2
+        'time': time_data,
+        'voltage': voltage_data,
+        'reading': reading_data
     })
 
     # Calculate changes in voltage and reading
@@ -297,7 +333,7 @@ def update_report_preview():
 
 def main():
     global message_text, com_port_var, baud_rate_var, com_combobox, connect_button, refresh_button, data_text, \
-        root, scrolled_text2, scrolled_text1, scrolled_text3, connection_status_label, broker_entry, topic_entry, port_combobox
+        root, scrolled_text2, scrolled_text1, scrolled_text3, connection_status_label, broker_entry, topic_entry, port_combobox,ax1,ax2,ax3,live_canvas1,live_canvas2,live_canvas3
 
     root = tk.Tk()
 
@@ -350,8 +386,8 @@ def main():
     connection_status_label.grid(row=1, column=7, padx=10)
 
     # Refresh button in the header frame
-    refresh_button = Button(header_frame, text="Refresh", command=clear_data)
-    refresh_button.grid(row=1, column=8, padx=10, pady=10)
+    refresh_button1 = Button(header_frame, text="Refresh_data", command=clear_data)
+    refresh_button1.grid(row=1, column=8, padx=10, pady=10)
 
     # Com label in the header frame
     com_label = tk.Label(header_frame, text="Com Port:")
@@ -423,84 +459,136 @@ def main():
     graph_frame = tk.Frame(root)
     graph_frame.pack(fill='both', expand=True)
 
-    canvas1, toolbar1, update_func1 = create_live_matplotlib_figure_with_toolbar(graph_frame, "Graph 1", x_data1, y_data1, row=0, col=0)
-    canvas2, toolbar2, update_func2 = create_live_matplotlib_figure_with_toolbar(graph_frame, "Graph 2", x_data2, y_data2, row=0, col=1)
-    canvas3, toolbar3, update_func3 = create_live_matplotlib_figure_with_toolbar(graph_frame, "Graph 3", x_data3, y_data3, row=0, col=2)
+    # Create figures for the live graphs
+    live_fig1 = Figure(figsize=(6, 4), dpi=100)
+    ax1 = live_fig1.add_subplot(111)
 
-    # Set equal column weights for resizing
-    graph_frame.columnconfigure(0, weight=1)
-    graph_frame.columnconfigure(1, weight=1)
-    graph_frame.columnconfigure(2, weight=1)
+    live_fig2 = Figure(figsize=(6, 4), dpi=100)
+    ax2 = live_fig2.add_subplot(111)
 
-    # Set row weight for resizing
-    graph_frame.rowconfigure(0, weight=1)
+    live_fig3 = Figure(figsize=(6, 4), dpi=100)
+    ax3 = live_fig3.add_subplot(111)
 
-    # Start the animation without caching frame data
-    ani1 = FuncAnimation(canvas1.figure, update_func1, blit=False, cache_frame_data=False)
-    ani2 = FuncAnimation(canvas2.figure, update_func2, blit=False, cache_frame_data=False)
-    ani3 = FuncAnimation(canvas3.figure, update_func3, blit=False, cache_frame_data=False)
+    # Create individual frames for each graph and toolbar with padding
+    graph_frame1 = tk.Frame(graph_frame)
+    graph_frame1.grid(row=0, column=0,pady=5, padx=25, sticky="nsew")
+
+    graph_frame2 = tk.Frame(graph_frame)
+    graph_frame2.grid(row=0, column=1, padx=30,pady=5, sticky="nsew")
+
+    graph_frame3 = tk.Frame(graph_frame)
+    graph_frame3.grid(row=0, column=2, padx=30,pady=5, sticky="nsew")
+
+    # Create canvases for the live graphs
+    live_canvas1 = FigureCanvasTkAgg(live_fig1, master=graph_frame1)
+    live_canvas_widget1 = live_canvas1.get_tk_widget()
+    live_canvas_widget1.pack(fill='both', expand=True)
+
+    # Add toolbar above the graph
+    toolbar1 = NavigationToolbar2Tk(live_canvas1, graph_frame1)
+    toolbar1.update()
+    toolbar1.pack(side=tk.TOP, fill=tk.X)
+
+    live_canvas2 = FigureCanvasTkAgg(live_fig2, master=graph_frame2)
+    live_canvas_widget2 = live_canvas2.get_tk_widget()
+    live_canvas_widget2.pack(fill='both', expand=True)
+
+    # Add toolbar above the graph
+    toolbar2 = NavigationToolbar2Tk(live_canvas2, graph_frame2)
+    toolbar2.update()
+    toolbar2.pack(side=tk.TOP, fill=tk.X)
+
+    live_canvas3 = FigureCanvasTkAgg(live_fig3, master=graph_frame3)
+    live_canvas_widget3 = live_canvas3.get_tk_widget()
+    live_canvas_widget3.pack(fill='both', expand=True)
+
+    # Add toolbar above the graph
+    toolbar3 = NavigationToolbar2Tk(live_canvas3, graph_frame3)
+    toolbar3.update()
+    toolbar3.pack(side=tk.TOP, fill=tk.X)
+
+    # Create animations for updating live graphs
+    live_animation1 = FuncAnimation(live_fig1, update_live_graph, interval=1000)
+    live_animation2 = FuncAnimation(live_fig2, update_live_graph, interval=1000)
+    live_animation3 = FuncAnimation(live_fig3, update_live_graph, interval=1000)
 
 
-    # ... (Rest of the graph frame code remains unchanged)
 
     root.mainloop()
 
 
-def create_live_matplotlib_figure_with_toolbar(parent, title, x_data, y_data, row, col):
-    figure = Figure(figsize=(6, 4), dpi=100)
-    subplot = figure.add_subplot(1, 1, 1)
-    subplot.set_title(title)
-    subplot.set_xlabel("X-axis", labelpad=0)
-    subplot.set_ylabel("Y-axis", labelpad=0)
-
-    # Create a Frame to hold both the canvas and the toolbar
-    graph_frame = tk.Frame(parent)
-    graph_frame.grid(row=row, column=col, sticky="nsew")
-
-    # Prevent the frame from adjusting its size to fit its children
-    graph_frame.pack_propagate(0)
-
-    # Create Matplotlib toolbar
-    toolbar = NavigationToolbar2Tk(figure.canvas, graph_frame)
-    toolbar.update()
-    toolbar.grid(row=0, column=0, sticky="nsew", padx=30, pady=10)
-
-    # Create Matplotlib canvas
-    canvas = FigureCanvasTkAgg(figure, master=graph_frame)
-    canvas.get_tk_widget().grid(row=1, column=0, sticky="nsew", padx=30, pady=10)
-
-    # Set equal row weights for resizing in the new frame
-    graph_frame.rowconfigure(0, weight=0)  # Toolbar
-    graph_frame.rowconfigure(1, weight=1)  # Canvas
-
-    # Define the update function for animation
-    def update_func(frame):
-        update_data(frame, subplot, x_data, y_data, title, canvas)
-
-    return canvas, toolbar, update_func
+# ... (Your existing code)
 
 
-def update_data(frame, subplots, x_data, y_data_sets, titles, canvas):
-    for i, (subplot, x_data, y_data, title) in enumerate(zip(subplots, x_data, y_data_sets, titles)):
-        # Update the line data
-        line = subplot.lines[0]
-        line.set_xdata(x_data)
-        line.set_ydata(y_data)
 
-        if title == "Graph 1":
-            subplot.set_title(title)
-            subplot.set_xlabel("Time", labelpad=0)
-            subplot.set_ylabel("Voltage", labelpad=0)
-        elif title == "Graph 2":
-            subplot.set_title(title)
-            subplot.set_xlabel("Voltage", labelpad=0)
-            subplot.set_ylabel("Thrust", labelpad=0)
-        elif title == "Graph 3":
-            subplot.set_title(title)
-            subplot.set_xlabel("Thrust", labelpad=0)
-            subplot.set_ylabel("Time", labelpad=0)
 
-    canvas.draw()
+
+
+# ... (Your existing code)
+
+def update_live_graph(i):
+    # Check if the zooming or panning is active
+    if live_canvas1.toolbar.mode != "":
+        # Schedule the update after a short delay
+        return  # Do nothing during zoom or pan
+
+    # Update plot data only when not zooming or panning
+    ax1.clear()
+    ax1.plot(time_data, voltage_data, '-o', label='Voltage')
+    ax1.set_title("Time vs Voltage")
+    ax1.set_xlabel("Time")
+    ax1.set_ylabel("Voltage")
+    ax1.legend()
+
+    ax2.clear()
+    ax2.plot(voltage_data, reading_data, '-o', label='Reading')
+    ax2.set_title("Voltage vs Thrust")
+    ax2.set_xlabel("Voltage")
+    ax2.set_ylabel("Thrust")
+    ax2.legend()
+
+    ax3.clear()
+    ax3.plot(time_data, reading_data, '-o', label='Average Reading')
+    ax3.set_title("Time vs Thrust")
+    ax3.set_xlabel("Time")
+    ax3.set_ylabel("Thrust")
+    ax3.legend()
+
+    # Redraw the canvases
+    live_canvas1.draw()
+    live_canvas2.draw()
+    live_canvas3.draw()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def generate_report():
     # Get the content from scrolled_text3
     report_content = scrolled_text3.get("1.0", tk.END).strip()
