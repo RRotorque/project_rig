@@ -34,7 +34,8 @@ def get_available_com_ports():
 
 
 def read_sensor_value():
-    global is_connected, serial_port, scrolled_text2
+    global is_connected, serial_port, scrolled_text2, time_data, voltage_data, reading_data
+
     while is_connected:
         try:
             if serial_port.is_open:
@@ -46,6 +47,22 @@ def read_sensor_value():
                 scrolled_text2.insert(tk.END, data + '\n')
                 scrolled_text2.config(state=tk.DISABLED)
                 scrolled_text2.see(tk.END)  # Scroll to the end
+
+                if "Data" in data:
+                    # Extract values from the JSON data
+                    try:
+                        json_data = json.loads(data.split("Data: ")[1])
+                        time_value = json_data["time"]
+                        # Extract minute value from the time field
+                        minute_value = int(time_value.split(":")[1])
+                        time_data.append(minute_value)
+                        voltage_data.append(json_data["voltage"])
+                        reading_data.append(json_data["reading"])
+
+                        # Generate and update the report preview
+                        root.after(100, update_report_preview)
+                    except (json.JSONDecodeError, ValueError, KeyError) as e:
+                        print("Error processing JSON data:", e)
         except serial.SerialException:
             disconnect()
             # Directly update the scrolled_text2 widget
@@ -54,6 +71,7 @@ def read_sensor_value():
             scrolled_text2.config(state=tk.DISABLED)
             scrolled_text2.see(tk.END)  # Scroll to the end
             break
+
 
 def connect():
     global is_connected, serial_port, serial_thread, com_port_var, baud_rate_var, message_text, connect_button, refresh_button, com_combobox, data_text
@@ -85,7 +103,7 @@ def disconnect():
     if is_connected:
         is_connected = False
         serial_port.close()
-        message_text.insert(tk.END, "Disconnected\n")
+        scrolled_text2.insert(tk.END, "Disconnected\n")
 
         # Update button and combobox state
         connect_button.configure(text="Connect")
