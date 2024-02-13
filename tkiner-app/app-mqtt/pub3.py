@@ -26,7 +26,7 @@ for index, row in df.iterrows():
 
     # Publish the message
     client.loop_start()
-    client.publish("topic/stream", payload, qos=1, retain=False)
+    client.publish("sensorData", payload, qos=1, retain=False)
     client.loop_stop()
     print(f"Message {index + 1} sent: {payload}")
 
