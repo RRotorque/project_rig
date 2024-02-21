@@ -161,6 +161,10 @@ def clear_data():
     scrolled_text1.delete(1.0, tk.END)
     scrolled_text1.config(state=tk.DISABLED)
 
+    scrolled_text2.config(state=tk.NORMAL)
+    scrolled_text2.delete(1.0, tk.END)
+    scrolled_text2.config(state=tk.DISABLED)
+
     scrolled_text3.config(state=tk.NORMAL)
     scrolled_text3.delete(1.0, tk.END)
     scrolled_text3.config(state=tk.DISABLED)
@@ -644,7 +648,7 @@ def save_content():
         if file_path:
             # Implement your saving logic here
             # Example: Save the content to the specified file
-            with open(file_path, "w") as file:
+            with open(file_path, "w", encoding="utf-8") as file:
                 if com_content:
                     file.write("COM Connection:\n" + com_content + "\n\n")
                 if mqtt_content:
@@ -669,10 +673,6 @@ def create_matplotlib_figure(title, x_data, y_data):
     subplot.set_ylabel("Y-axis")
 
     return figure
-
-def clear_data():
-    # Implement functionality to clear data or refresh as needed
-    pass
 
 def splash_screen():
     # Creating the main window
