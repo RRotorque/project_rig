@@ -192,7 +192,8 @@ def clear_data():
     live_canvas3.draw()
 
 def connect_to_broker():
-    client = mqtt.Client()
+    global client
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
     client.on_connect = on_connect
     client.on_message = on_message
     broker_address = broker_entry.get()
@@ -233,6 +234,8 @@ def on_connect(*args):
 
         # Update the scrolled_text2 widget
         scrolled_text1.config(state=tk.NORMAL)
+        # Update button and combobox states
+        mqtt__connect_button.configure(text="Disconnect", command=Mqtt_disconnect)
         # scrolled_text1.insert(tk.END, "Connected to broker successfully.\n")
         scrolled_text1.config(state=tk.DISABLED)
         scrolled_text1.see(tk.END)  # Scroll to the end
@@ -247,6 +250,16 @@ def on_connect(*args):
 
         # Disable the refresh button after connecting
         refresh_button.config(state=tk.DISABLED)
+
+def Mqtt_disconnect():
+    global mqtt__connect_button
+
+    # Disconnect logic
+    client.disconnect()
+    print(" Mqtt Disconnected")
+
+    # Update button state
+    mqtt__connect_button.configure(text="Connect", command=connect_to_broker)  # Update the command to call connect function
 
 def update_gui(message):
     scrolled_text1.config(state=tk.NORMAL)
@@ -277,7 +290,7 @@ def on_message(client, userdata, msg):
     y_point_voltage = data.get('voltage')
 
     minutes = extract_minutes_from_time(x_point)
-    print(minutes)
+    # print(minutes)
 
     #time vs thrust
     time_data.append(minutes)
@@ -362,7 +375,7 @@ def set_window_position(window, x, y):
 
 def main():
     global message_text, com_port_var, baud_rate_var, com_combobox, connect_button, refresh_button, data_text, \
-        root, scrolled_text2, scrolled_text1, scrolled_text3, connection_status_label, broker_entry, topic_entry, port_combobox,ax1,ax2,ax3,live_canvas1,live_canvas2,live_canvas3
+        root, scrolled_text2, scrolled_text1, scrolled_text3, connection_status_label, broker_entry, topic_entry, port_combobox,ax1,ax2,ax3,live_canvas1,live_canvas2,live_canvas3,mqtt__connect_button
 
     root = tk.Tk()
 
@@ -410,8 +423,8 @@ def main():
     port_combobox.grid(row=1, column=5)
 
     # Connect button in the header frame
-    connect_button1 = ttk.Button(header_frame, text="Connect", command=connect_to_broker)
-    connect_button1.grid(row=1, column=6, padx=10)
+    mqtt__connect_button = ttk.Button(header_frame, text="Connect", command=connect_to_broker)
+    mqtt__connect_button.grid(row=1, column=6, padx=10)
 
     # Connection status label in the header frame
     connection_status_label = tk.Label(header_frame, text="", fg="black")
