@@ -526,11 +526,24 @@ def main():
     live_canvas1 = FigureCanvasTkAgg(live_fig1, master=graph_frame1)
     live_canvas_widget1 = live_canvas1.get_tk_widget()
     live_canvas_widget1.pack(fill='both', expand=True)
+    
+    # Create animations for updating live graphs
+    live_animation1 = FuncAnimation(live_fig1, update_live_graph, interval=1000, cache_frame_data=False)
+    live_animation2 = FuncAnimation(live_fig2, update_live_graph, interval=1000, cache_frame_data=False)
+    live_animation3 = FuncAnimation(live_fig3, update_live_graph, interval=1000, cache_frame_data=False)
 
     # Add toolbar above the graph
     toolbar1 = NavigationToolbar2Tk(live_canvas1, graph_frame1)
     toolbar1.update()
     toolbar1.pack(side=tk.TOP, fill=tk.X)
+
+    # Connect toolbar events to functions
+    toolbar1._idle = lambda *args: resume_animation(live_animation1)
+    toolbar1._zoom = lambda *args: on_toolbar_zoom(live_animation1)
+    toolbar1._pan = lambda *args: on_toolbar_pan(live_animation1)
+
+    # Start the animation after connecting the toolbar events
+    live_animation1.event_source.start()
 
     live_canvas2 = FigureCanvasTkAgg(live_fig2, master=graph_frame2)
     live_canvas_widget2 = live_canvas2.get_tk_widget()
@@ -541,6 +554,14 @@ def main():
     toolbar2.update()
     toolbar2.pack(side=tk.TOP, fill=tk.X)
 
+    # Connect toolbar events to functions
+    toolbar2._idle = lambda *args: resume_animation(live_animation2)
+    toolbar2._zoom = lambda *args: on_toolbar_zoom(live_animation2)
+    toolbar2._pan = lambda *args: on_toolbar_pan(live_animation2)
+
+    # Start the animation after connecting the toolbar events
+    live_animation2.event_source.start()
+
     live_canvas3 = FigureCanvasTkAgg(live_fig3, master=graph_frame3)
     live_canvas_widget3 = live_canvas3.get_tk_widget()
     live_canvas_widget3.pack(fill='both', expand=True)
@@ -550,16 +571,29 @@ def main():
     toolbar3.update()
     toolbar3.pack(side=tk.TOP, fill=tk.X)
 
-    # Create animations for updating live graphs
-    live_animation1 = FuncAnimation(live_fig1, update_live_graph, interval=1000, cache_frame_data=False)
-    live_animation2 = FuncAnimation(live_fig2, update_live_graph, interval=1000, cache_frame_data=False)
-    live_animation3 = FuncAnimation(live_fig3, update_live_graph, interval=1000, cache_frame_data=False)
+    # Connect toolbar events to functions
+    toolbar3._idle = lambda *args: resume_animation(live_animation3)
+    toolbar3._zoom = lambda *args: on_toolbar_zoom(live_animation3)
+    toolbar3._pan = lambda *args: on_toolbar_pan(live_animation3)
+
+    # Start the animation after connecting the toolbar events
+    live_animation3.event_source.start()
 
     root.protocol("WM_DELETE_WINDOW", close_app)
 
     root.mainloop()
 
+def on_toolbar_zoom(self, *args):
+    self.pause_animation()
 
+def on_toolbar_pan(self, *args):
+    self.pause_animation()
+
+def pause_animation(self):
+    self.live_animation.event_source.stop()
+
+def resume_animation(self):
+    self.live_animation.event_source.start()
 def close_app():
     disconnect()
     root.destroy()
@@ -568,9 +602,11 @@ def close_app():
 def update_live_graph(i):
     # Check if the zooming or panning is active
     if live_canvas1.toolbar.mode != "":
-        # Schedule the update after a short delay
         return  # Do nothing during zoom or pan
-
+    if live_canvas2.toolbar.mode != "":
+        return  # Do nothing during zoom or pan
+    if live_canvas3.toolbar.mode != "":
+        return  # Do nothing during zoom or pan
     # Update plot data only when not zooming or panning
     ax1.clear()
     ax1.plot(time_data, voltage_data, '-o', label='Voltage',color="#023020",markersize=1)
