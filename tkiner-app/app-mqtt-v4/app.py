@@ -224,7 +224,7 @@ def on_connect(*args):
 
     if rc == 0:
         print(f"Connected to {broker_entry.get()}:{port_combobox.get()}")
-        connection_status_label.config(text="Connected successfully", fg="green")
+        connection_status_label.config(text="Connected ", fg="green")
         topic_to_subscribe = topic_entry.get()
         client.subscribe(topic_to_subscribe)
         print(f"Subscribed to {topic_to_subscribe} successfully")
@@ -256,6 +256,7 @@ def Mqtt_disconnect():
 
     # Disconnect logic
     client.disconnect()
+    connection_status_label.config(text="Disconnected ", fg="purple")
     print(" Mqtt Disconnected")
 
     # Update button state
