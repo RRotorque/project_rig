@@ -67,3 +67,4 @@ step7: compiler setting
 step8: select no
     go to files section DestDir: "{app}/asset"   #add /asset
     -save the file
+    -------------------------done---------------------
